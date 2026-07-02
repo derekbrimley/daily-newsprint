@@ -1,8 +1,10 @@
 # 🗞️ The Daily Newsprint
 
 A personal morning newspaper, generated fresh every day: unread email,
-today's calendar, the surf report, weather, and headlines — one page you can
-read with your coffee so you don't have to touch your phone until later.
+today's calendar, the surf report, weather, headlines, and a long read pulled
+from your Readwise Reader queue — one page you can read with your coffee so
+you don't have to touch your phone until later. Also renders a compact
+front-page PNG for a color e-ink display.
 
 ```
 python -m newsprint.build        # prints today's edition to output/index.html
@@ -22,8 +24,11 @@ config.yaml ──▶ newsprint/build.py
                    ├─ sections/news.py           RSS headlines (keyless)
                    ├─ sections/gmail_unread.py   Gmail API (OAuth, optional)
                    ├─ sections/calendar_today.py Calendar API (OAuth, optional)
+                   ├─ sections/reader.py         Readwise Reader long read (optional)
                    ├─ summarize.py               Claude editor's briefing (optional)
-                   └─ render.py ──▶ output/index.html  (broadsheet-styled page)
+                   ├─ render.py ──▶ output/index.html   (broadsheet front page)
+                   │                output/article.html (today's long read)
+                   └─ eink.py   ──▶ output/eink.png     (e-ink display card)
 ```
 
 Each section is a module with one `fetch(config) -> dict` function. To add a
@@ -40,10 +45,49 @@ python -m newsprint.build
 open output/index.html
 ```
 
-### Claude briefing (optional)
+### Readwise Reader long read (optional)
 
-Set `ANTHROPIC_API_KEY` in your environment. Claude reads the day's data and
-writes a short front-page editor's note. Costs a fraction of a cent per day.
+Each edition features one article from your Reader queue — front-page teaser
+plus the full text on `article.html`. Get a token at
+[readwise.io/access_token](https://readwise.io/access_token) and set it as
+`READWISE_TOKEN`. In `config.yaml` you can choose which list to pull from
+(`later` by default), the pick strategy (`oldest` clears your backlog,
+`random` keeps it interesting), and whether printing an article archives it
+(`archive_after_print: true` — the Printernet move: your queue actually
+shrinks as you read the paper).
+
+### Claude briefing (optional) — API key or your Claude subscription
+
+Claude reads the day's data and writes the italic front-page editor's note.
+Two ways to pay for it, set via `sections.briefing.provider`:
+
+| provider | How it runs | Cost |
+|---|---|---|
+| `claude-cli` | Shells out to the Claude Code CLI (`claude -p`) on your machine | Covered by your Claude Pro/Max **subscription** — no API key |
+| `api` | Anthropic API via the `anthropic` SDK (`ANTHROPIC_API_KEY`) | Pay-per-token, a fraction of a cent per edition |
+| `auto` (default) | CLI if `claude` is on PATH, otherwise the API | — |
+
+If you run the paper on your own machine or a Pi via cron, install
+[Claude Code](https://claude.com/claude-code), log in once, and the briefing
+rides on your subscription. On GitHub Actions, use an API key secret —
+CI isn't covered by a personal subscription login.
+
+### E-ink display (optional)
+
+The build also renders `output/eink.png` — a compact, high-contrast front
+page (weather, surf, agenda, mail count, top headlines, today's long read)
+sized for a 7.3" color e-ink panel (800×480; change `eink.width/height` in
+`config.yaml` for other panels). It needs Chromium for rendering:
+
+```bash
+pip install playwright && playwright install chromium
+```
+
+If your display already rotates images on a refresh cycle (like an Inky
+dashboard pulling image URLs), just add the published PNG to its rotation —
+e.g. `https://<user>.github.io/daily-newsprint/eink.png` when using the
+GitHub Pages workflow, or the local file path when building on the Pi
+itself. No changes needed on the display side.
 
 ### Gmail & Calendar (optional)
 
@@ -91,4 +135,3 @@ physical paper. Peak phone avoidance.
 - Air quality (Open-Meteo air quality API, keyless)
 - Word of the day / on this day in history (Wikipedia API)
 - Strava/fitness summary, sports scores, package tracking
-- "Long read of the day" pulled from your read-later queue

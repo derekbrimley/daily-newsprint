@@ -28,6 +28,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # For the e-ink PNG. Remove if eink.enabled is false in config.yaml.
+      - name: Install Playwright Chromium
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
       # Only needed if the gmail/calendar sections are enabled.
       - name: Restore Google token
         if: ${{ vars.GOOGLE_SECTIONS_ENABLED == 'true' }}
@@ -38,8 +44,10 @@ jobs:
       - name: Build the edition
         run: python -m newsprint.build
         env:
-          # Optional — enables the Claude front-page briefing.
+          # Optional — enables the Claude front-page briefing (api provider).
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Optional — enables the Readwise Reader long-read section.
+          READWISE_TOKEN: ${{ secrets.READWISE_TOKEN }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

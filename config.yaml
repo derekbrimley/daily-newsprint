@@ -47,11 +47,29 @@ sections:
     enabled: false
     calendar_id: "primary"
 
+  # Today's long read, pulled from your Readwise Reader queue.
+  # Requires READWISE_TOKEN (https://readwise.io/access_token).
+  reader:
+    enabled: true
+    location: "later"        # which Reader list: new | later | shortlist | archive
+    strategy: "oldest"       # oldest | newest | random
+    archive_after_print: false  # true = printing an article archives it (Printernet-style)
+
   # Claude writes a short front-page "editor's briefing" from the day's data.
-  # Requires ANTHROPIC_API_KEY. Skipped gracefully if absent.
+  # provider: auto = use the Claude Code CLI (your Claude subscription) when
+  # `claude` is on PATH, otherwise the Anthropic API (ANTHROPIC_API_KEY).
+  # Skipped gracefully if neither is available.
   briefing:
     enabled: true
-    model: "claude-opus-4-8"
+    provider: "auto"         # auto | claude-cli | api
+    model: "claude-opus-4-8" # used by the api provider
+
+# Compact front-page image for a color e-ink display (output/eink.png).
+# 800x480 is the 7.3" Inky Impression; adjust to your panel.
+eink:
+  enabled: true
+  width: 800
+  height: 480
 
 output:
   directory: "output"

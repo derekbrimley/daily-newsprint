@@ -59,6 +59,24 @@ section h2 span { color: var(--accent); }
 .item:first-of-type { border-top: none; }
 .item .meta { color: var(--faint); font-size: .8rem; }
 .note { color: var(--faint); font-style: italic; font-size: .9rem; }
+.longread-title {
+  display: block; font-size: 1.3rem; font-weight: 900; line-height: 1.25;
+  color: var(--ink); text-decoration: none;
+}
+.longread-title:hover { color: var(--accent); }
+.longread .src { font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--faint); margin: .3rem 0 .5rem; }
+.longread-summary { font-size: .92rem; line-height: 1.5; }
+.longread-cta { display: inline-block; margin-top: .5rem; color: var(--accent); font-style: italic; text-decoration: none; }
+.article-body { max-width: 42rem; margin: 0 auto; font-size: 1.05rem; line-height: 1.7; padding-top: 1.5rem; }
+.article-body img { max-width: 100%; height: auto; }
+.article-body p, .article-body ul, .article-body ol, .article-body blockquote { margin-bottom: 1rem; }
+.article-body h1, .article-body h2, .article-body h3 { margin: 1.6rem 0 .6rem; line-height: 1.3; }
+.article-body blockquote { border-left: 3px solid var(--rule); padding-left: 1rem; font-style: italic; }
+.article-body pre { overflow-x: auto; background: #efe9d8; padding: .8rem; font-size: .85rem; }
+.article-head { text-align: center; padding: 1.6rem 0 .4rem; border-bottom: 1px solid var(--rule); }
+.article-head h1 { font-size: 2rem; line-height: 1.2; }
+.article-head .src { font-size: .75rem; text-transform: uppercase; letter-spacing: .12em; color: var(--faint); margin-top: .5rem; }
+.backlink { display: inline-block; margin: 1rem 0; color: var(--accent); text-decoration: none; font-style: italic; }
 .colophon {
   border-top: 4px double var(--ink); margin-top: .5rem; padding-top: .8rem;
   text-align: center; font-size: .75rem; color: var(--faint);
@@ -141,16 +159,36 @@ def _calendar_html(d: dict) -> str:
     )
 
 
+def _reader_html(d: dict) -> str:
+    article = d.get("article")
+    if not article:
+        return '<p class="note">The reading queue is empty — go save something good.</p>'
+    byline = " · ".join(filter(None, [
+        article["author"], article["site"],
+        f"{article['reading_minutes']} min read",
+    ]))
+    summary = f'<p class="longread-summary">{escape(article["summary"])}</p>' \
+        if article["summary"] else ""
+    return f"""
+    <div class="longread">
+      <a class="longread-title" href="article.html">{escape(article['title'])}</a>
+      <div class="src">{escape(byline)}</div>
+      {summary}
+      <a class="longread-cta" href="article.html">Turn to the full piece →</a>
+    </div>"""
+
+
 RENDERERS = {
     "weather": ("The Weather", _weather_html),
     "surf": ("Surf Report", _surf_html),
     "news": ("The Wire", _news_html),
     "gmail": ("Correspondence", _gmail_html),
     "calendar": ("Today's Engagements", _calendar_html),
+    "reader": ("The Long Read", _reader_html),
 }
 
 # Print order: personal columns first, news last (it's the longest).
-SECTION_ORDER = ["calendar", "gmail", "weather", "surf", "news"]
+SECTION_ORDER = ["calendar", "gmail", "weather", "surf", "reader", "news"]
 
 
 def render(sections: dict, briefing: str | None, config: dict) -> str:
@@ -195,6 +233,38 @@ def render(sections: dict, briefing: str | None, config: dict) -> str:
   {briefing_html}
   <main class="columns">{''.join(body)}</main>
   <footer class="colophon">Printed at {now.strftime('%-I:%M %p')} · Now put the phone down</footer>
+</div>
+</body>
+</html>"""
+
+
+def render_article(article: dict, config: dict) -> str:
+    """Render the day's long read as its own page (output/article.html)."""
+    paper = config["paper"]
+    byline = " · ".join(filter(None, [
+        article["author"], article["site"],
+        f"{article['reading_minutes']} min read",
+    ]))
+    original = (
+        f' · <a href="{escape(article["url"])}">original</a>' if article["url"] else ""
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{escape(article['title'])} — {escape(paper['title'])}</title>
+<style>{CSS}</style>
+</head>
+<body>
+<div class="sheet">
+  <a class="backlink" href="index.html">← Back to the front page</a>
+  <header class="article-head">
+    <h1>{escape(article['title'])}</h1>
+    <div class="src">{escape(byline)}{original}</div>
+  </header>
+  <div class="article-body">{article['html_content']}</div>
+  <footer class="colophon">From your Readwise Reader queue · {escape(paper['title'])}</footer>
 </div>
 </body>
 </html>"""
