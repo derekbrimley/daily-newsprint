@@ -1,0 +1,57 @@
+# The Daily Newsprint — configuration
+# Sections run independently; if one fails or isn't configured, the paper
+# still prints with a note in its place.
+
+paper:
+  title: "The Daily Newsprint"
+  motto: "All the news you need before you touch your phone"
+  timezone: "America/Denver"
+
+# Used by the weather section (Open-Meteo, no API key needed).
+location:
+  name: "Salt Lake City, UT"
+  latitude: 40.76
+  longitude: -111.89
+  temperature_unit: "fahrenheit" # or "celsius"
+
+sections:
+  weather:
+    enabled: true
+
+  surf:
+    enabled: true
+    # Marine forecast point (Open-Meteo Marine API, no key needed).
+    # Default: Huntington Beach, CA. Point this at your break.
+    spot_name: "Huntington Beach, CA"
+    latitude: 33.655
+    longitude: -118.005
+
+  news:
+    enabled: true
+    max_per_feed: 5
+    feeds:
+      - name: "NPR News"
+        url: "https://feeds.npr.org/1001/rss.xml"
+      - name: "BBC World"
+        url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+      - name: "Hacker News"
+        url: "https://hnrss.org/frontpage"
+
+  # Requires Google OAuth credentials — see README "Gmail & Calendar setup".
+  gmail:
+    enabled: false
+    max_messages: 10
+    query: "is:unread category:primary newer_than:2d"
+
+  calendar:
+    enabled: false
+    calendar_id: "primary"
+
+  # Claude writes a short front-page "editor's briefing" from the day's data.
+  # Requires ANTHROPIC_API_KEY. Skipped gracefully if absent.
+  briefing:
+    enabled: true
+    model: "claude-opus-4-8"
+
+output:
+  directory: "output"

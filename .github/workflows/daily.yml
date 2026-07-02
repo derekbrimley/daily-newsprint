@@ -1,0 +1,56 @@
+name: Print the morning edition
+
+on:
+  schedule:
+    # 6:00 AM Mountain Time (12:00 UTC). Cron is always UTC — adjust for your zone.
+    - cron: "0 12 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Only needed if the gmail/calendar sections are enabled.
+      - name: Restore Google token
+        if: ${{ vars.GOOGLE_SECTIONS_ENABLED == 'true' }}
+        run: echo "$GOOGLE_TOKEN_JSON" > token.json
+        env:
+          GOOGLE_TOKEN_JSON: ${{ secrets.GOOGLE_TOKEN_JSON }}
+
+      - name: Build the edition
+        run: python -m newsprint.build
+        env:
+          # Optional — enables the Claude front-page briefing.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: output
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

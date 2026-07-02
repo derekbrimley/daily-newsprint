@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+output/
+token.json
+credentials.json
+.env
